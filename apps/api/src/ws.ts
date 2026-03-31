@@ -2,6 +2,8 @@ import { WebSocketServer, WebSocket } from "ws";
 import { eq } from "drizzle-orm";
 import { db } from "./db/index.js";
 import { agents, testRuns } from "./db/schema.js";
+import { updateFlakinessScores } from "./flakiness.js";
+import { notifyTestResult } from "./notify.js";
 
 interface ConnectedAgent {
   ws: WebSocket;
@@ -109,6 +111,24 @@ async function handleAgentMessage(agentId: string, msg: { type: string; payload:
 
       broadcast("run_completed", { runId, status: p.status });
       console.log(`Test run ${runId}: ${p.status}`);
+
+      // Update flakiness scores
+      const [run] = await db.select({ testId: testRuns.testId }).from(testRuns).where(eq(testRuns.id, runId));
+      if (run) {
+        await updateFlakinessScores(run.testId);
+
+        // Send notification on failure
+        if (p.status !== "passed") {
+          notifyTestResult({
+            runId,
+            testName: run.testId, // TODO: join test name
+            status: p.status as string,
+            durationMs: (p.durationMs as number) ?? 0,
+            failureClassification: p.failureClassification as string | undefined,
+            dashboardUrl: process.env.DASHBOARD_URL ?? "http://localhost:3000",
+          }).catch(() => {});
+        }
+      }
       break;
     }
 
