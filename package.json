@@ -1,0 +1,13 @@
+{
+  "name": "loopqa",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "db:generate": "pnpm --filter @loopqa/api db:generate",
+    "db:migrate": "pnpm --filter @loopqa/api db:migrate",
+    "db:push": "pnpm --filter @loopqa/api db:push"
+  },
+  "packageManager": "pnpm@10.33.0"
+}
