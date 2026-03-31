@@ -3,6 +3,7 @@ import { createHTTPHandler } from "@trpc/server/adapters/standalone";
 import { appRouter } from "./router.js";
 import { startAgentWsServer, addSSEClient } from "./ws.js";
 import { handleCIEndpoints } from "./ci.js";
+import { handleExportEndpoints } from "./export.js";
 
 const PORT = parseInt(process.env.PORT ?? "4000", 10);
 const WS_PORT = parseInt(process.env.WS_PORT ?? "4001", 10);
@@ -38,6 +39,12 @@ const server = http.createServer(async (req, res) => {
   // CI/CD REST endpoints
   if (req.url?.startsWith("/api/ci/")) {
     const handled = await handleCIEndpoints(req, res);
+    if (handled) return;
+  }
+
+  // Export endpoints
+  if (req.url?.startsWith("/api/export/")) {
+    const handled = await handleExportEndpoints(req, res);
     if (handled) return;
   }
 

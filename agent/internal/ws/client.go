@@ -121,9 +121,16 @@ func (c *Client) handleExecuteTest(payload json.RawMessage) {
 
 	log.Printf("Executing test run %s on device %s (%d steps)", p.RunID, p.DeviceID, len(p.Steps))
 
-	// Create controller for the device
-	ctrl := controller.NewAndroidController(p.DeviceID)
-	orch := controller.NewOrchestrator(ctrl)
+	// Create controller for the device — detect type automatically
+	var phone, watch controller.DeviceController
+	phone = controller.NewAndroidController(p.DeviceID)
+
+	// Check if a watch device ID was provided
+	if watchID, ok := p.Steps[0]["watchDeviceId"].(string); ok && watchID != "" {
+		watch = controller.NewWearOSController(watchID)
+	}
+
+	orch := controller.NewPairOrchestrator(phone, watch)
 	steps := controller.StepsFromRaw(p.Steps)
 
 	// Stream BLE packets during execution
